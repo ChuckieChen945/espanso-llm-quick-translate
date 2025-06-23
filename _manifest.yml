@@ -1,7 +1,19 @@
-name: "espanso-llm-ask-ai"
-title: "Espanso LLM ask AI"
-description: "An Espanso package that enables users to quickly send prompts to a local (e.g. Ollama or LM Studio) or remote LLM API calls (OpenAI standard) and insert the AI-generated response directly into any text field."
+name: "espanso-llm-quick-translate"
+title: "Espanso LLM Quick Translate"
+description: "An Espanso package that enables users to quickly translate text using a local (e.g. Ollama or LM Studio) or remote LLM API (OpenAI-compatible), and insert the translated result directly into any text field."
 version: "0.1.0"
-author: "Bernhard Enders"
-homepage: "https://github.com/bgeneto/espanso-llm-ask-ai"
-tags: ["LLM", "AI", "artificial intelligence", "prompt", "Espanso", "Ollama", "OpenAI"]
+author: "Chuckie Chen"
+homepage: "https://github.com/ChuckieChen945/espanso-llm-quick-translate"
+tags:
+    [
+        "LLM",
+        "AI",
+        "artificial intelligence",
+        "prompt",
+        "Espanso",
+        "Ollama",
+        "OpenAI",
+        "Translate",
+        "Language",
+        "English",
+    ]
