@@ -26,8 +26,17 @@ Requirements:
 """
 
 import os
-import shutil
 import sys
+
+parent_folder_path = os.path.abspath(os.path.dirname(__file__))
+sys.path.append(parent_folder_path)
+sys.path.append(os.path.join(parent_folder_path, "lib"))
+
+import shutil
+import difflib
+import asyncio
+from edge_tts import Communicate
+from playsound import playsound
 sys.stdout.reconfigure(encoding="utf-8")
 
 # packages dependency check
@@ -45,6 +54,67 @@ if missing:
 from openai import OpenAI
 from dotenv import load_dotenv
 
+async def generate_tts_audio(text: str, filename: str = "output.mp3"):
+    communicate = Communicate(text, "en-GB-LibbyNeural")
+    await communicate.save(filename)
+
+def change_color(s:str):
+    s = s.replace('c#98C379','c#4C613C')
+    s = s.replace('c#E06C75','c#70363A')
+    s = s.replace('c#E5C07B','c#72603D')
+    s = s.replace('c#FFFFFF','c#7F7F7F')
+    return s
+
+def write_diffs(new_B1:str,new_B2:str):
+
+    dotenv_path = os.path.join(os.path.dirname(__file__), "diffs_text.txt")
+    load_dotenv(dotenv_path)
+    A1 = os.getenv("A1")
+    A2 = os.getenv("A2")
+    B1 = os.getenv("B1")
+    B2 = os.getenv("B2")
+
+    A1 = change_color(B1)
+    A2 = change_color(B2)
+    B1 = new_B1
+    B2 = new_B2
+
+    with open(dotenv_path, "w", encoding="utf-8") as f:
+        f.write(f"A1={A1}\n" + "\n")
+        f.write(f"A2={A2}\n" + "\n")
+        f.write(f"B1={B1}\n" + "\n")
+        f.write(f"B2={B2}\n" + "\n")
+
+
+def lcs_diff_align_desktop_info(a: str, b: str):
+    sm = difflib.SequenceMatcher(None, a, b)
+
+    a_aligned = []
+    b_aligned = []
+
+    COLOR_GREEN = '\\c#98C379\\'   # 新增 - 柔和绿色
+    COLOR_RED = '\\c#E06C75\\'     # 删除 - 柔和红色
+    COLOR_YELLOW = '\\c#E5C07B\\'  # 替换 - 柔和黄色
+    COLOR_RESET = '\\c#FFFFFF\\'   # 常规文本 - 灰白
+
+    for tag, i1, i2, j1, j2 in sm.get_opcodes():
+        a_seg = a[i1:i2]
+        b_seg = b[j1:j2]
+
+        if tag == 'equal':
+            a_aligned.append(f"{COLOR_GREEN}{a_seg}{COLOR_RESET}")
+            b_aligned.append(f"{COLOR_GREEN}{b_seg}{COLOR_RESET}")
+        elif tag == 'delete':
+            a_aligned.append(f"{COLOR_RED}{a_seg}{COLOR_RESET}")
+            b_aligned.append(f"{COLOR_RED}{' ' * len(a_seg)}{COLOR_RESET}")
+        elif tag == 'insert':
+            a_aligned.append(f"{COLOR_RED}{' ' * len(b_seg)}{COLOR_RESET}")
+            b_aligned.append(f"{COLOR_RED}{b_seg}{COLOR_RESET}")
+        elif tag == 'replace':
+            a_aligned.append(f"{COLOR_YELLOW}{a_seg}{COLOR_RESET}")
+            b_aligned.append(f"{COLOR_YELLOW}{b_seg}{COLOR_RESET}")
+
+    return ''.join(a_aligned), ''.join(b_aligned)
 
 def ensure_env_file() -> None:
     """
@@ -145,6 +215,15 @@ def main() -> None:
         return
     result = ask_ai(text)
     print(result)
+
+
+    # FIXME: 后台执行，不阻塞主进程
+
+    B1,B2 = lcs_diff_align_desktop_info(text,result)
+    write_diffs(B1,B2)
+    # 调用 edge-tts 生成音频
+    asyncio.run(generate_tts_audio(result, "output.mp3"))
+    playsound("output.mp3", block=True)
 
 if __name__ == "__main__":
     main()

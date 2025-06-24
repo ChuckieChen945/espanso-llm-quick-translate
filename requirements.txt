@@ -1,2 +1,5 @@
-openai
-python-dotenv
+openai==1.90.0
+python-dotenv==1.1.0
+pyperclip==1.8.2
+edge-tts==7.0.2
+playsound==1.2.2
