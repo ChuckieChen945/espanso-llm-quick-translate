@@ -1,5 +1,5 @@
 matches:
-    - trigger: ":a"
+    - trigger: "::"
       replace: "{{output}}"
       vars:
           - name: "prompt"
