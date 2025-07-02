@@ -27,106 +27,22 @@ Requirements:
 
 import os
 import sys
-
-parent_folder_path = os.path.abspath(os.path.dirname(__file__))
-sys.path.append(parent_folder_path)
-sys.path.append(os.path.join(parent_folder_path, "lib"))
-
 import shutil
-import difflib
-import asyncio
-from edge_tts import Communicate
-from playsound import playsound
-sys.stdout.reconfigure(encoding="utf-8")
+import subprocess
+from typing import Tuple
 
-# packages dependency check
-REQUIRED_PACKAGES = ["openai", "dotenv"]
-missing = []
-for pkg in REQUIRED_PACKAGES:
-    try:
-        __import__(pkg)
-    except ImportError:
-        missing.append(pkg)
-if missing:
-    print(f"❌ Error: Missing required packages: {', '.join(missing)}. Please install them with 'pip install -r requirements.txt'.")
-    sys.exit(0)
+script_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.extend([script_dir, os.path.join(script_dir, "lib")])
+sys.stdout.reconfigure(encoding="utf-8")
 
 from openai import OpenAI
 from dotenv import load_dotenv
-
-async def generate_tts_audio(text: str, filename: str = "output.mp3"):
-    communicate = Communicate(text, "en-GB-LibbyNeural")
-    await communicate.save(filename)
-
-def change_color(s:str):
-    # TODO：右对齐
-    s = s.replace('<green>','<green_t>')
-    s = s.replace('</green>','</green_t>')
-    s = s.replace('<red>','<red_t>')
-    s = s.replace('</red>','</red_t>')
-    s = s.replace('<yellow>','<yellow_t>')
-    s = s.replace('</yellow>','</yellow_t>')
-    return s
-
-def write_diffs(new_B1:str,new_B2:str):
-
-    dotenv_path = os.path.join(os.path.dirname(__file__), "diffs_text.txt")
-    load_dotenv(dotenv_path)
-    A1 = os.getenv("A1")
-    A2 = os.getenv("A2")
-    B1 = os.getenv("B1")
-    B2 = os.getenv("B2")
-
-    A1 = change_color(B1)
-    A2 = change_color(B2)
-    B1 = new_B1
-    B2 = new_B2
-
-    with open(dotenv_path, "w", encoding="utf-8") as f:
-        f.write(f"A1={A1}\n")
-        f.write(f"A2={A2}\n" + "\n")
-        f.write(f"B1={B1}\n")
-        f.write(f"B2={B2}")
-
-
-def lcs_diff_align_desktop_info(a: str, b: str):
-    sm = difflib.SequenceMatcher(None, a, b)
-
-    a_aligned = []
-    b_aligned = []
-
-    COLOR_GREEN = '<green>'   # 新增 - 柔和绿色
-    COLOR_GREEN_STOP = '</green>'   # 新增 - 柔和绿色
-    COLOR_RED = '<red>'     # 删除 - 柔和红色
-    COLOR_RED_STOP = '</red>'     # 删除 - 柔和红色
-    COLOR_YELLOW = '<yellow>'  # 替换 - 柔和黄色
-    COLOR_YELLOW_STOP = '</yellow>'  # 替换 - 柔和黄色
-
-    for tag, i1, i2, j1, j2 in sm.get_opcodes():
-        a_seg = a[i1:i2]
-        b_seg = b[j1:j2]
-
-        if tag == 'equal':
-            a_aligned.append(f"{COLOR_GREEN}{a_seg}{COLOR_GREEN_STOP}")
-            b_aligned.append(f"{COLOR_GREEN}{b_seg}{COLOR_GREEN_STOP}")
-        elif tag == 'delete':
-            a_aligned.append(f"{COLOR_RED}{a_seg}{COLOR_RED_STOP}")
-            b_aligned.append(f"{COLOR_RED}{' ' * len(a_seg)}{COLOR_RED_STOP}")
-        elif tag == 'insert':
-            a_aligned.append(f"{COLOR_RED}{' ' * len(b_seg)}{COLOR_RED_STOP}")
-            b_aligned.append(f"{COLOR_RED}{b_seg}{COLOR_RED_STOP}")
-        elif tag == 'replace':
-            a_aligned.append(f"{COLOR_YELLOW}{a_seg}{COLOR_YELLOW_STOP}")
-            b_aligned.append(f"{COLOR_YELLOW}{b_seg}{COLOR_YELLOW_STOP}")
-
-    return ''.join(a_aligned), ''.join(b_aligned)
 
 def ensure_env_file() -> None:
     """
     Ensures that a .env file exists. If not, tries to copy example.env to .env using shutil.copy.
     Raises FileNotFoundError if neither exists, lets OSError propagate on copy failure.
     """
-    script_dir = os.path.dirname(__file__)
     env_path = os.path.join(script_dir, ".env")
     example_env_path = os.path.join(script_dir, "example.env")
 
@@ -136,23 +52,27 @@ def ensure_env_file() -> None:
         else:
             raise FileNotFoundError(f"❌ Error: Missing .env file in directory: '{script_dir}'.")
 
-def load_and_validate_env() -> tuple[str, str, str]:
+def load_and_validate_env() -> Tuple[str, str, str, str, str,str, bool]:
     """
     Loads and validates .env configuration. Returns (api_key, base_url, model).
     Raises ValueError if any required variable is missing.
     """
-    dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
+    dotenv_path = os.path.join(script_dir, ".env")
     load_dotenv(dotenv_path)
     api_key = os.getenv("API_KEY")
     base_url = os.getenv("BASE_URL")
     model = os.getenv("MODEL")
+    audio_path = os.getenv("AUDIO_FILE", os.path.join(script_dir, "translated.mp3"))
+    diff_path = os.getenv("DIFF_FILE", os.path.join(script_dir, "diffs_text.txt"))
+    sound_name = os.getenv("SOUND_NAME",  "en-GB-LibbyNeural")
+    auto_play= os.getenv("AUTO_PLAY", "false")=='true'
     if not api_key:
         raise ValueError("❌ Error: API_KEY variable not found in .env file!")
     if not base_url:
         raise ValueError("❌ Error: BASE_URL variable not found in .env file!")
     if not model:
         raise ValueError("❌ Error: MODEL variable not found in .env file!")
-    return api_key, base_url, model
+    return api_key, base_url, model, audio_path, diff_path, sound_name, auto_play
 
 def ask_ai(text: str) -> str:
     """
@@ -166,7 +86,7 @@ def ask_ai(text: str) -> str:
     """
     try:
         ensure_env_file()
-        api_key, base_url, model = load_and_validate_env()
+        api_key, base_url, model, _ , _, _,_ = load_and_validate_env()
         client = OpenAI(api_key=api_key, base_url=base_url)
         response = client.chat.completions.create(
             model=model,
@@ -207,6 +127,24 @@ def ask_ai(text: str) -> str:
     except Exception:
         return "❌ Error: An unexpected error occurred while processing your request. Check model name, api key etc... and try again later."
 
+
+
+### ✅ Main logic ###
+
+def spawn_background_task_cli(text, result, audio_file, diff_file, sound_name, auto_play):
+    args = [
+        sys.executable,  # ensures same Python interpreter
+        os.path.join(script_dir,  "background_worker.py"),
+        text,
+        result,
+        audio_file,
+        diff_file,
+        sound_name,
+        'true'
+    ]
+    # subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.Popen(args)
+
 def main() -> None:
     """
     Main entry point for the script. Parses arguments, validates input, calls ask_ai, and prints the result.
@@ -214,21 +152,17 @@ def main() -> None:
     if len(sys.argv) != 2:
         print('❌ Usage error: python ask-ai.py "<text>"')
         return
-    text = sys.argv[1]
-    if not text.strip():
+    original = sys.argv[1]
+    if not original.strip():
         print("❌ Error: No prompt text provided!")
         return
-    result = ask_ai(text)
-    print(result)
+    translated = ask_ai(original)
+    print(translated,flush=True)
 
-
-    # FIXME: 后台执行，不阻塞主进程
-
-    B1,B2 = lcs_diff_align_desktop_info(text,result)
-    write_diffs(B1,B2)
-    # 调用 edge-tts 生成音频
-    asyncio.run(generate_tts_audio(result, "output.mp3"))
-    playsound("output.mp3", block=True)
+    # ✅ Read paths from config and launch async background task
+    _, _, _, audio_file, diff_file,sound_name,auto_play = load_and_validate_env()
+    spawn_background_task_cli(original, translated, audio_file, diff_file,sound_name,auto_play)
+    return
 
 if __name__ == "__main__":
     main()
