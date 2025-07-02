@@ -1,18 +1,31 @@
 matches:
     - trigger: "::"
-      replace: "{{output}}"
+      replace: "{{translated_text}}"
+      label: \[llm-quick-translate\] Translate and generate audio
       vars:
-          - name: "prompt"
+          - name: "raw_text"
             type: "form"
             params:
                 layout: "What would you like to translate?\n\n[[text]]"
                 fields:
                     text:
                         multiline: true
-          - name: "output"
+          - name: "translated_text"
             type: "script"
             params:
                 args:
                     - python
                     - "%CONFIG%/match/packages/espanso-llm-quick-translate/ask-ai.py"
-                    - "{{prompt.text}}"
+                    - "{{raw_text.text}}"
+
+    - trigger: "\x11" # <Ctrl-Q> to play last generated audio
+      replace: "{{play_last_audio}}"
+      label: \[llm-quick-translate\] Play translated audio
+      force_mode: keys
+      vars:
+          - name: play_last_audio
+            type: script
+            params:
+                args:
+                    - python
+                    - "%CONFIG%/match/packages/espanso-llm-quick-translate/play_audio.py"
