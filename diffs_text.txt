@@ -1,4 +1,0 @@
-A1=## This file will be used as output for the prompts ##
-A2=
-B1=## Note that everytime you select Open in Notepad,  ##
-B2=## the content of this file be overwritten.         ##

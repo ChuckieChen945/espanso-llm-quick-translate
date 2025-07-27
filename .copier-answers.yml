@@ -1,0 +1,15 @@
+_commit: v1.5.1
+_src_path: gh:superlinear-ai/substrate
+author_email: chuckie_chen@outlook.com
+author_name: Chuckie Chen
+project_description: An Espanso package that enables users to quickly translate text
+    using a local (e.g. Ollama or LM Studio) or remote LLM API (OpenAI-compatible),
+    and insert the translated result directly into any text field.
+project_name: espanso-llm-quick-translate
+project_type: app
+project_url: https://github.com/ChuckieChen945/espanso-llm-quick-translate
+python_version: '3.12'
+typing: strict
+with_conventional_commits: true
+with_fastapi_api: false
+with_typer_cli: true

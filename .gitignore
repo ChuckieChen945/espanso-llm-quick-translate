@@ -129,3 +129,95 @@ dmypy.json
 
 lib/*
 !lib/.gitkeep
+
+# Coverage.py
+htmlcov/
+reports/
+
+# Copier
+*.rej
+
+# Data
+*.csv*
+*.dat*
+*.pickle*
+*.xls*
+*.zip*
+data/
+
+# direnv
+.envrc
+
+# dotenv
+.env
+
+# Hypothesis
+.hypothesis/
+
+# Jupyter
+*.ipynb
+.ipynb_checkpoints/
+notebooks/
+
+# macOS
+.DS_Store
+
+# mise
+mise.local.toml
+
+# mypy
+.dmypy.json
+.mypy_cache/
+
+# Node.js
+node_modules/
+
+# PyCharm
+.idea/
+
+# pyenv
+.python-version
+
+# pytest
+.pytest_cache/
+
+# Python
+__pycache__/
+*.egg-info/
+*.py[cdo]
+.venv/
+dist/
+
+# Ruff
+.ruff_cache/
+
+# Terraform
+.terraform/
+
+# VS Code
+.vscode/
+
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+dev-debug.log
+
+# Dependency directories
+node_modules/
+
+# Environment variables
+.env
+
+# Editor directories and files
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+.espanso-llm-quick-translate.json

@@ -15,7 +15,7 @@ matches:
             params:
                 args:
                     - python
-                    - "%CONFIG%/match/packages/espanso-llm-quick-translate/ask-ai.py"
+                    - "%CONFIG%/match/packages/espanso-llm-quick-translate/src/main.py"
                     - "{{raw_text.text}}"
 
     - trigger: "\x11" # <Ctrl-Q> to play last generated audio
@@ -28,4 +28,4 @@ matches:
             params:
                 args:
                     - python
-                    - "%CONFIG%/match/packages/espanso-llm-quick-translate/play_audio.py"
+                    - "%CONFIG%/match/packages/espanso-llm-quick-translate/src/sound/play_audio.py"
