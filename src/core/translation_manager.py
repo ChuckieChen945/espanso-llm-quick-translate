@@ -57,13 +57,24 @@ class TranslationManager:
     def _start_audio_process(self, translated_text: str) -> None:
         """启动音频生成子进程."""
         script_path = Path(__file__).parent.parent / "subprocesses/generate_audio.py"
-        subprocess.Popen([sys.executable, script_path, translated_text])  # noqa: S603
+        subprocess.Popen(
+            [sys.executable, script_path, translated_text],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            stdin=subprocess.DEVNULL,
+            start_new_session=True,  # 创建新的会话组
+        )
 
     def _start_diff_process(self, original_text: str, translated_text: str) -> None:
         """启动diff生成子进程."""
         script_path = Path(__file__).parent.parent / "subprocesses/generate_diff.py"
-        # FIXME:
-        subprocess.Popen([sys.executable, script_path, original_text, translated_text])  # noqa: S603
+        subprocess.Popen(
+            [sys.executable, script_path, original_text, translated_text],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            stdin=subprocess.DEVNULL,
+            start_new_session=True,  # 创建新的会话组
+        )
 
     def play_last_audio(self) -> None:
         """手动播放音频."""

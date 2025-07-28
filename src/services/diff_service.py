@@ -92,7 +92,7 @@ class DiffService:
             a_translated = DiffUtils.convert_to_transparent(old_translated)
 
             # 写入新的diff数据
-            with Path.open(filepath, "w", encoding="utf-16-le") as f:
+            with Path.open(filepath, "w", encoding="utf-8") as f:
                 f.write(f"A_ORIGINAL={a_original}\n")
                 f.write(f"A_TRANSLATED={a_translated}\n\n")
                 f.write(f"B_ORIGINAL={new_original}\n")
@@ -128,7 +128,7 @@ class DiffService:
             return "", ""
 
         try:
-            load_dotenv(filepath, encoding="utf-16-le")
+            load_dotenv(filepath, encoding="utf-8")
             old_original = os.getenv("B_ORIGINAL", "")
             old_translated = os.getenv("B_TRANSLATED", "")
 
@@ -205,33 +205,3 @@ class DiffService:
             return f"原文: {original_text}\n译文: {translated_text}"
         else:
             return formatted_diff
-
-    def test_diff_generation(self) -> bool:
-        """测试diff生成功能.
-
-        Returns
-        -------
-            测试是否成功
-        """
-        try:
-            self.logger.info("测试diff生成功能")
-
-            # 测试简单的diff生成
-            test_original = "Hello world"
-            test_translated = "你好世界"
-
-            original_aligned, translated_aligned = DiffUtils.generate_diff(
-                test_original,
-                test_translated,
-            )
-
-            if original_aligned and translated_aligned:
-                self.logger.info("diff生成功能测试成功")
-                return True
-            self.logger.error("diff生成功能测试失败：生成了空结果")
-
-        except Exception as e:
-            self.logger.error(f"diff生成功能测试失败: {e}", exc_info=True)
-            return False
-        else:
-            return False
