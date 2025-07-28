@@ -4,12 +4,13 @@
 """
 
 import os
+import shutil
 from pathlib import Path
 
 from dotenv import load_dotenv
 
 from config import ConfigManager
-from utils import DiffUtils
+from utils.diff_utils import DiffUtils
 
 
 class DiffService:
@@ -26,6 +27,13 @@ class DiffService:
         """
         self.config = config
         self.diff_file = Path(config.diff_output_path)
+
+    def install_showdiffs_skin(self) -> None:
+        """安装showdiffs皮肤."""
+        if not Path(self.config.showdiffs_skin_path).exists():
+            raw_skin_path = Path(__file__).parent.parent.parent / "resources" / "ShowDiffs.ini"
+            # 复制皮肤文件到目标路径
+            shutil.copy(raw_skin_path, self.config.showdiffs_skin_path)
 
     def write_diffs_to_file(
         self,
@@ -46,9 +54,9 @@ class DiffService:
         # 加载旧的diff数据
         old_original, old_translated = self._load_old_diffs(filepath)
 
-        # 转换颜色标签
-        a_original = DiffUtils.change_color_transparent(old_original)
-        a_translated = DiffUtils.change_color_transparent(old_translated)
+        # 转换颜色标签为透明版本
+        a_original = DiffUtils.convert_to_transparent(old_original)
+        a_translated = DiffUtils.convert_to_transparent(old_translated)
 
         # 写入新的diff数据
         with Path.open(filepath, "w", encoding="utf-8") as f:
@@ -90,10 +98,24 @@ class DiffService:
             filepath: 文件路径
         """
         # 生成diff
-        original_aligned, translated_aligned = DiffUtils.lcs_diff_align_desktop_info(
+        original_aligned, translated_aligned = DiffUtils.generate_diff(
             original_text,
             translated_text,
         )
 
         # 写入文件
         self.write_diffs_to_file(original_aligned, translated_aligned, filepath)
+        self.install_showdiffs_skin()
+
+    def get_formatted_diff(self, original_text: str, translated_text: str) -> str:
+        """获取格式化的差异文本.
+
+        Args:
+            original_text: 原始文本
+            translated_text: 翻译文本
+
+        Returns
+        -------
+            格式化的差异文本
+        """
+        return DiffUtils.format_diff_for_display(original_text, translated_text)

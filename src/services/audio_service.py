@@ -55,8 +55,7 @@ class AudioService:
         self._last_audio_file = file_path
         return file_path
 
-    # TODO： Boolean-typed positional argument in function definition (RuffFBT001)
-    def play_audio(self, filepath: str, block: bool = True) -> None:
+    def play_audio(self, filepath: str, *, block: bool = True) -> None:
         """播放音频文件.
 
         Args:
@@ -69,8 +68,7 @@ class AudioService:
 
         playsound(filepath, block=block)
 
-    # TODO： Boolean-typed positional argument in function definition (RuffFBT001)
-    def play_last_audio(self, block: bool = True) -> None:
+    def play_last_audio(self, *, block: bool = True) -> None:
         """播放最后生成的音频.
 
         Args:
@@ -80,7 +78,7 @@ class AudioService:
             msg = "没有可播放的音频文件"
             raise ValueError(msg)
 
-        self.play_audio(self._last_audio_file, block)
+        self.play_audio(self._last_audio_file, block=block)
 
     @property
     def last_audio_file(self) -> str | None:

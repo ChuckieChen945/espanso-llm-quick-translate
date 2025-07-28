@@ -221,3 +221,4 @@ node_modules/
 *.sw?
 
 .espanso-llm-quick-translate.json
+diffs.ini
