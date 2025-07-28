@@ -1,7 +1,7 @@
 """音频播放模块.
 
 package.yml 定义了 <Ctrl-Q> 快捷键，用于播放音频。
-优化为支持详细的日志记录和错误处理。
+优化为支持详细的日志记录和错误处理，立即返回结果给espanso。
 """
 
 import io
@@ -16,7 +16,7 @@ from src.utils import setup_logging
 def main() -> None:
     """主函数.
 
-    播放最后生成的音频文件。优化为支持详细的日志记录和错误处理。
+    播放最后生成的音频文件。优化为立即返回结果给espanso，然后异步播放音频。
     """
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
     start_time = time.time()
@@ -37,22 +37,28 @@ def main() -> None:
         if translation_manager.last_audio_file is None:
             error_msg = "没有可播放的音频文件"
             logger.warning(error_msg)
+            # 立即返回错误信息给espanso
             sys.stdout.write("❌ 没有可播放的音频文件")
             sys.stdout.flush()
             return
 
         logger.info(f"播放音频文件: {translation_manager.last_audio_file}")
 
-        # 播放最后生成的音频
-        translation_manager.play_last_audio()
-
-        total_time = time.time() - start_time
-        logger.info(f"音频播放完成，总耗时: {total_time:.2f}秒")
-
-        # 只播放音频，输出空内容给espanso
-        # TODO: 开始进程后先立即输出 空内容 给 espanso，然后异步执行播放音频
+        # 立即返回空内容给espanso，然后异步播放音频
         sys.stdout.write("")
         sys.stdout.flush()
+
+        # 在后台异步播放音频
+        import threading
+
+        audio_thread = threading.Thread(
+            target=translation_manager.play_last_audio,
+            daemon=True,
+        )
+        audio_thread.start()
+
+        total_time = time.time() - start_time
+        logger.info(f"音频播放请求完成，总耗时: {total_time:.2f}秒")
 
     except FileNotFoundError as e:
         error_msg = f"配置文件错误: {e}"

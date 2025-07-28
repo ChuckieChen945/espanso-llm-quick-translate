@@ -93,7 +93,7 @@ class DiffService:
             a_translated = DiffUtils.convert_to_transparent(old_translated)
 
             # 写入新的diff数据
-            with Path.open(filepath, "w", encoding="utf-8") as f:
+            with Path.open(filepath, "w", encoding="utf-16-le") as f:
                 f.write(f"A_ORIGINAL={a_original}\n")
                 f.write(f"A_TRANSLATED={a_translated}\n\n")
                 f.write(f"B_ORIGINAL={new_original}\n")
@@ -129,7 +129,7 @@ class DiffService:
             return "", ""
 
         try:
-            load_dotenv(filepath)
+            load_dotenv(filepath, encoding="utf-16-le")
             old_original = os.getenv("B_ORIGINAL", "")
             old_translated = os.getenv("B_TRANSLATED", "")
 

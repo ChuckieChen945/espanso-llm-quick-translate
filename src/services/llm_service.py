@@ -1,6 +1,7 @@
 """LLM服务模块.
 
 负责与AI模型交互，处理翻译请求。优化为支持详细的日志记录和错误处理。
+支持代理配置。
 """
 
 import asyncio
@@ -8,6 +9,7 @@ import time
 from pathlib import Path
 from string import Template
 
+import httpx
 from openai import OpenAI
 
 from config import ConfigManager
@@ -18,6 +20,7 @@ class LLMService:
     """LLM服务类.
 
     负责与AI模型交互，处理翻译请求。支持详细的日志记录和错误处理。
+    支持代理配置。
     """
 
     def __init__(self, config: ConfigManager) -> None:
@@ -27,12 +30,40 @@ class LLMService:
             config: 配置管理器
         """
         self.config = config
-        self.client = OpenAI(
-            api_key=config.api_key,
-            base_url=config.base_url,
-        )
         self.logger = get_logger("LLMService")
         self._system_prompt: str | None = None
+
+        # 构建客户端配置
+        client_kwargs = {
+            "api_key": config.api_key,
+            "base_url": config.base_url,
+        }
+
+        # 添加代理配置（如果配置了）
+        if hasattr(config, "proxy") and config.proxy:
+            client_kwargs["http_client"] = self._create_proxy_client(config.proxy)
+            self.logger.info(f"使用代理: {config.proxy}")
+
+        self.client = OpenAI(**client_kwargs)
+
+    def _create_proxy_client(self, proxy_url: str) -> httpx.Client | None:
+        """创建代理客户端.
+
+        Args:
+            proxy_url: 代理URL
+
+        Returns
+        -------
+            配置了代理的HTTP客户端
+        """
+        try:
+            return httpx.Client(
+                proxies=proxy_url,
+                timeout=30.0,
+            )
+        except ImportError:
+            self.logger.warning("httpx未安装，无法使用代理功能")
+            return None
 
     def _load_system_prompt(self) -> str:
         """加载系统提示.
@@ -92,7 +123,6 @@ class LLMService:
             # 调用LLM API
             response = self.client.chat.completions.create(
                 model=self.config.model,
-                # TODO: 支持配置使用 代理
                 messages=[
                     {
                         "role": "system",
@@ -104,6 +134,7 @@ class LLMService:
                     },
                 ],
                 stream=False,
+                timeout=30,  # 30秒超时
             )
 
             translated_text = response.choices[0].message.content.strip()
@@ -153,6 +184,7 @@ class LLMService:
                     {"role": "user", "content": "Hello"},
                 ],
                 max_tokens=10,
+                timeout=10,  # 10秒超时
             )
 
             self.logger.info("LLM API连接测试成功")

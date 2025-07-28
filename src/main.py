@@ -1,6 +1,7 @@
 """主程序模块.
 
 espanso包的主入口点，处理翻译请求。支持详细的日志记录和错误处理。
+优化为立即返回翻译结果，后台任务异步执行。
 """
 
 import io
@@ -15,8 +16,8 @@ from utils import setup_logging
 def main() -> None:
     """主程序入口.
 
-    解析参数，验证输入，调用翻译管理器，并打印结果。
-    优化为立即返回翻译结果，其余工作异步执行。
+    解析参数，验证输入，调用翻译管理器，并立即打印结果给espanso。
+    后台任务（音频生成、diff生成、自动播放）异步执行。
     """
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
     start_time = time.time()
@@ -61,9 +62,11 @@ def main() -> None:
         logger.info(f"翻译请求完成，总耗时: {total_time:.2f}秒")
         logger.info(f"翻译结果: {translated[:100]}{'...' if len(translated) > 100 else ''}")
 
-        # 输出翻译结果给espanso
+        # 立即输出翻译结果给espanso
         sys.stdout.write(translated)
         sys.stdout.flush()
+
+        # 后台任务已在翻译管理器中异步启动，无需等待
 
     except FileNotFoundError as e:
         error_msg = f"配置文件错误: {e}"

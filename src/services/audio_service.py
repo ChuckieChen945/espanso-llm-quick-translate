@@ -69,6 +69,7 @@ class AudioService:
 
             # 生成音频
             communicate = Communicate(text, sound_name)
+            # FIXME: cannot schedule new futures after interpreter shutdown
             await communicate.save(file_path)
 
             # 验证文件是否生成成功

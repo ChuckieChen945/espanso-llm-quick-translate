@@ -1,6 +1,7 @@
 """配置管理模块.
 
 统一管理项目配置，支持从JSON文件加载配置。
+支持代理配置和其他高级选项。
 """
 
 import json
@@ -11,7 +12,7 @@ from typing import Any
 class ConfigManager:
     """配置管理器类.
 
-    负责加载、验证和管理项目配置。
+    负责加载、验证和管理项目配置。支持代理配置和其他高级选项。
     """
 
     def __init__(self, config_file: str = ".espanso-llm-quick-translate.json") -> None:
@@ -93,6 +94,11 @@ class ConfigManager:
         return self.get_required("model")
 
     @property
+    def proxy(self) -> str | None:
+        """获取代理URL."""
+        return self.get("proxy")
+
+    @property
     def auto_play(self) -> bool:
         """获取是否自动播放."""
         return self.get("auto_play", "false").lower() == "true"
@@ -149,6 +155,21 @@ class ConfigManager:
         """获取目标语言."""
         return self.get("target_language", "English")
 
+    @property
+    def timeout(self) -> int:
+        """获取超时时间（秒）."""
+        return int(self.get("timeout", "30"))
+
+    @property
+    def max_retries(self) -> int:
+        """获取最大重试次数."""
+        return int(self.get("max_retries", "3"))
+
+    @property
+    def log_level(self) -> str:
+        """获取日志级别."""
+        return self.get("log_level", "INFO")
+
     def validate(self) -> None:
         """验证配置完整性."""
         required_keys = ["api_key", "base_url", "model"]
@@ -157,3 +178,27 @@ class ConfigManager:
         if missing_keys:
             msg = f"配置文件中缺少必需的配置项: {', '.join(missing_keys)}"
             raise ValueError(msg)
+
+    def get_all_config(self) -> dict[str, Any]:
+        """获取所有配置（用于调试）.
+
+        Returns
+        -------
+            所有配置的字典
+        """
+        return {
+            "api_key": self.api_key,
+            "base_url": self.base_url,
+            "model": self.model,
+            "proxy": self.proxy,
+            "auto_play": self.auto_play,
+            "diff_output_path": self.diff_output_path,
+            "audio_file_path": self.audio_file_path,
+            "system_prompt_file": self.system_prompt_file,
+            "showdiffs_skin_path": self.showdiffs_skin_path,
+            "sound_name": self.sound_name,
+            "target_language": self.target_language,
+            "timeout": self.timeout,
+            "max_retries": self.max_retries,
+            "log_level": self.log_level,
+        }
