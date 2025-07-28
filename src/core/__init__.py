@@ -1,12 +1,6 @@
-"""_summary_.
+"""核心包."""
 
-Raises
-------
-    FileNotFoundError: _description_
-    ValueError: _description_
-    ValueError: _description_
-"""
+from core.service_factory import ServiceFactory
+from core.translation_manager import TranslationManager
 
-from .ask_ai import ask_ai
-
-__all__ = ["ask_ai"]
+__all__ = ["ServiceFactory", "TranslationManager"]

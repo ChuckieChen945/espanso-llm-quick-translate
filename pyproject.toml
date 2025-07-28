@@ -10,6 +10,7 @@ readme = "README.md"
 authors = [{ name = "Chuckie Chen", email = "chuckie_chen@outlook.com" }]
 requires-python = ">=3.12,<4.0"
 dependencies = [
+    "dotenv>=0.9.9",
     "edge-tts>=7.0.2",
     "openai>=1.97.1",
     "playsound==1.2.2",
