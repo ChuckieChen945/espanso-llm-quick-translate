@@ -5,8 +5,8 @@
 
 from typing import Optional
 
-from config import ConfigManager
-from core.translation_manager import TranslationManager
+from src.config import ConfigManager
+from src.core.translation_manager import TranslationManager
 
 
 class ServiceFactory:

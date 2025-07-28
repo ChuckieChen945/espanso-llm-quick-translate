@@ -1,6 +1,6 @@
 """核心包."""
 
-from core.service_factory import ServiceFactory
-from core.translation_manager import TranslationManager
+from src.core.service_factory import ServiceFactory
+from src.core.translation_manager import TranslationManager
 
 __all__ = ["ServiceFactory", "TranslationManager"]

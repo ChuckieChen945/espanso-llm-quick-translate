@@ -9,10 +9,9 @@ import time
 from pathlib import Path
 
 from dotenv import load_dotenv
-
-from config import ConfigManager
-from utils import get_logger
-from utils.diff_utils import DiffUtils
+from src.config import ConfigManager
+from src.utils import get_logger
+from src.utils.diff_utils import DiffUtils
 
 
 class DiffService:

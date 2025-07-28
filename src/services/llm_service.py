@@ -11,9 +11,8 @@ from string import Template
 
 import httpx
 from openai import OpenAI
-
-from config import ConfigManager
-from utils import get_logger
+from src.config import ConfigManager
+from src.utils import get_logger
 
 
 class LLMService:

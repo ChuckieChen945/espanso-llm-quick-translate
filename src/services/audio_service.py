@@ -8,9 +8,8 @@ from pathlib import Path
 
 from edge_tts import Communicate
 from playsound import playsound
-
-from config import ConfigManager
-from utils import get_logger
+from src.config import ConfigManager
+from src.utils import get_logger
 
 
 class AudioService:

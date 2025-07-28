@@ -9,14 +9,15 @@ import sys
 import time
 from pathlib import Path
 
-from src.core import ServiceFactory
+from playsound import playsound
+from src.config import ConfigManager
 from src.utils import setup_logging
 
 
 def main() -> None:
     """主函数.
 
-    播放最后生成的音频文件。优化为立即返回结果给espanso，然后异步播放音频。
+    播放最后生成的音频文件。立即返回结果给espanso，然后异步播放音频。
     """
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
     start_time = time.time()
@@ -29,12 +30,9 @@ def main() -> None:
     logger.info("开始音频播放请求")
 
     try:
-        # 使用服务工厂获取翻译管理器
-        factory = ServiceFactory()
-        translation_manager = factory.get_translation_manager()
-
+        config = ConfigManager()
         # 检查是否有可播放的音频文件
-        if translation_manager.last_audio_file is None:
+        if config.audio_file_path is None:
             error_msg = "没有可播放的音频文件"
             logger.warning(error_msg)
             # 立即返回错误信息给espanso
@@ -42,7 +40,7 @@ def main() -> None:
             sys.stdout.flush()
             return
 
-        logger.info(f"播放音频文件: {translation_manager.last_audio_file}")
+        logger.info(f"播放音频文件: {config.audio_file_path}")
 
         # 立即返回空内容给espanso，然后异步播放音频
         sys.stdout.write("")
@@ -52,7 +50,7 @@ def main() -> None:
         import threading
 
         audio_thread = threading.Thread(
-            target=translation_manager.play_last_audio,
+            target=playsound(config.audio_file_path, block=True),
             daemon=True,
         )
         audio_thread.start()
