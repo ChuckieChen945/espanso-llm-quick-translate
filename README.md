@@ -1,153 +1,175 @@
-# espanso-llm-ask-ai
-
-An Espanso package that enables users to quickly send prompts to a local (e.g. Ollama or LM Studio) or remote LLM API calls (OpenAI standard) and insert the AI-generated response directly into any text field.
-
-## Requirements
-
-- [Espanso](https://espanso.org/) installed and running
-- Python 3.9+ installed and available on your system path
-- Required Python packages: `openai` and `python-dotenv` (see `requirements.txt`)
-- Access to a local LLM (such as [Ollama](https://ollama.com/) or [LM Studio](https://lmstudio.ai/)) or a remote OpenAI compatible API (in this case, you will need to provide your API key in the `.env` file)
-
-## Configuration
-
-Edit the `.env` environment file inside the package directory () to set the `API_KEY`, `BASE_URL`and `MODEL`. Example:
-
-```bash
-API_KEY=ollama
-BASE_URL=http://localhost:11434/v1
-MODEL=llama3.2
-```
-
-> NOTE: don't forget to pull the Ollama model first. In the case above, just issue the command:
->
-> `ollama pull llama3.2`
-
-## Usage
-
-- Type the Espanso trigger for this package (`:ask:ai`) in any text field.
-- Enter your desired AI prompt when asked.
-- The AI-generated response will be inserted automatically (this can take several seconds, so choose a small and low latency LLM model).
-
-### Example
-
-Type:
-
-```
-:ask:ai
-```
-
-Then enter:
-
-```
-Summarize the following text: ...
-```
-
-Press the "Submit" button or "CTRL + Enter" to send the request. The response from your configured LLM will appear in place.
-
-## Troubleshooting
-
-- Make sure Python is available globally on your system's PATH environment variable and that the required packages are installed.
-- Check that your BASE_URL endpoint, MODEL and API_KEY are correctly set in the `.env` file (located in the Espanso config directory: `%CONFIG%/match/packages/espanso-llm-ask-ai/.env`).
-- After sending the request, make sure the cursor doesn’t lose focus and remains blinking at the correct insertion point. If it doesn’t, just click to place it right after the trigger string like this **:ask:ai|**
-- Review Espanso logs for errors.
-
-## License
-
-MIT
-
-## Author
-
-Bernhard Enders
-
-## Links
-
-- [Homepage](https://github.com/bgeneto/espanso-llm-ask-ai)
-- [Espanso Documentation](https://espanso.org/docs/)
-
-灵感来源：
-<https://github.com/bgeneto/espanso-llm-ask-ai>
-<https://github.com/MichielvanBeers/Flow.Launcher.Plugin.ChatGPT>
-
-[![Open in Dev Containers](https://img.shields.io/static/v1?label=Dev%20Containers&message=Open&color=blue&logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0iI2ZmZiIgZD0iTTE3IDE2VjdsLTYgNU0yIDlWOGwxLTFoMWw0IDMgOC04aDFsNCAyIDEgMXYxNGwtMSAxLTQgMmgtMWwtOC04LTQgM0gzbC0xLTF2LTFsMy0zIi8+PC9zdmc+)](https://vscode.dev/redirect?url=vscode://ms-vscode-remote.remote-containers/cloneInVolume?url=https://github.com/ChuckieChen945/espanso-llm-quick-translate) [![Open in GitHub Codespaces](https://img.shields.io/static/v1?label=GitHub%20Codespaces&message=Open&color=blue&logo=github)](https://github.com/codespaces/new/ChuckieChen945/espanso-llm-quick-translate)
-
 # espanso-llm-quick-translate
 
-An Espanso package that enables users to quickly translate text using a local (e.g. Ollama or LM Studio) or remote LLM API (OpenAI-compatible), and insert the translated result directly into any text field.
+一个基于 espanso 的快速翻译包，支持 LLM 翻译、TTS 音频生成和 diff 显示。
 
-## Installing
+## 🚀 新特性
 
-To install this package, run:
+### 重构优化
 
-```sh
-pip install espanso-llm-quick-translate
+- ✅ **跑马灯效果**：为 ShowDiffs.ini 添加了动态滚动效果
+- ✅ **更好的错误处理**：添加了重试机制、连接池管理和资源清理
+- ✅ **线程安全**：使用锁机制确保多线程环境下的安全性
+- ✅ **优雅关闭**：支持信号处理和资源清理
+- ✅ **原子文件操作**：使用临时文件确保文件写入的原子性
+
+### 核心功能
+
+- 🔄 **即时翻译**：立即返回翻译结果，后台异步处理其他任务
+- 🎵 **TTS 音频生成**：自动生成翻译文本的语音
+- 📊 **Diff 显示**：在 Rainmeter 皮肤中显示原文与译文的差异
+- 🎮 **快捷键播放**：使用 `<Ctrl-Q>` 播放最后生成的音频
+- 🔧 **配置管理**：支持代理、重试、超时等高级配置
+
+## 📋 系统要求
+
+- Python 3.8+
+- espanso
+- Rainmeter （可选，用于 diff 显示）
+- 网络连接 （用于 LLM API)
+
+## 🛠️ 安装
+
+1. 克隆项目到 espanso 包目录：
+
+```bash
+cd ~/.config/espanso/match/packages/
+git clone <repository-url> espanso-llm-quick-translate
 ```
 
-## Using
+2. 安装依赖：
 
-To view the CLI help information, run:
-
-```sh
-espanso-llm-quick-translate --help
+```bash
+cd espanso-llm-quick-translate
+pip install -r requirements.txt
 ```
 
-## Contributing
+3. 配置 API 密钥：
 
-<details>
-<summary>Prerequisites</summary>
+```bash
+cp .espanso-llm-quick-translate.json.tmpl .espanso-llm-quick-translate.json
+# 编辑配置文件，填入你的 API 密钥
+```
 
-1. [Generate an SSH key](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent#generating-a-new-ssh-key) and [add the SSH key to your GitHub account](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account).
-1. Configure SSH to automatically load your SSH keys:
+## ⚙️ 配置
 
-    ```sh
-    cat << EOF >> ~/.ssh/config
-    
-    Host *
-      AddKeysToAgent yes
-      IgnoreUnknown UseKeychain
-      UseKeychain yes
-      ForwardAgent yes
-    EOF
-    ```
+编辑 `.espanso-llm-quick-translate.json` 文件：
 
-1. [Install Docker Desktop](https://www.docker.com/get-started).
-1. [Install VS Code](https://code.visualstudio.com/) and [VS Code's Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers). Alternatively, install [PyCharm](https://www.jetbrains.com/pycharm/download/).
-1. _Optional:_ install a [Nerd Font](https://www.nerdfonts.com/font-downloads) such as [FiraCode Nerd Font](https://github.com/ryanoasis/nerd-fonts/tree/master/patched-fonts/FiraCode) and [configure VS Code](https://github.com/tonsky/FiraCode/wiki/VS-Code-Instructions) or [PyCharm](https://github.com/tonsky/FiraCode/wiki/Intellij-products-instructions) to use it.
+```json
+{
+    "api_key": "your-api-key",
+    "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/",
+    "model": "gemini-2.5-flash",
+    "auto_play": "true",
+    "diff_output_path": "path/to/diffs.ini",
+    "showdiffs_skin_path": "path/to/ShowDiffs.ini",
+    "audio_file_path": "translated.mp3",
+    "sound_name": "en-GB-LibbyNeural",
+    "target_language": "English",
+    "system_prompt_path": "src/resources/system_prompt.txt",
+    "timeout": 30,
+    "max_retries": 3,
+    "log_level": "INFO"
+}
+```
 
-</details>
+### 配置说明
 
-<details open>
-<summary>Development environments</summary>
+| 配置项                | 说明               | 默认值            |
+| --------------------- | ------------------ | ----------------- |
+| `api_key`             | LLM API 密钥       | 必需              |
+| `base_url`            | API 基础 URL       | 必需              |
+| `model`               | 使用的模型名称     | 必需              |
+| `auto_play`           | 是否自动播放音频   | false             |
+| `diff_output_path`    | diff 文件输出路径  | diffs_text.txt    |
+| `showdiffs_skin_path` | Rainmeter 皮肤路径 | 必需              |
+| `audio_file_path`     | 音频文件路径       | translated.mp3    |
+| `sound_name`          | TTS 语音名称       | en-GB-LibbyNeural |
+| `target_language`     | 目标语言           | English           |
+| `timeout`             | API 超时时间（秒） | 30                |
+| `max_retries`         | 最大重试次数       | 3                 |
+| `log_level`           | 日志级别           | INFO              |
 
-The following development environments are supported:
+## 🎯 使用方法
 
-1. ⭐️ _GitHub Codespaces_: click on [Open in GitHub Codespaces](https://github.com/codespaces/new/ChuckieChen945/espanso-llm-quick-translate) to start developing in your browser.
-1. ⭐️ _VS Code Dev Container (with container volume)_: click on [Open in Dev Containers](https://vscode.dev/redirect?url=vscode://ms-vscode-remote.remote-containers/cloneInVolume?url=https://github.com/ChuckieChen945/espanso-llm-quick-translate) to clone this repository in a container volume and create a Dev Container with VS Code.
-1. ⭐️ _uv_: clone this repository and run the following from root of the repository:
+### 翻译文本
 
-    ```sh
-    # Create and install a virtual environment
-    uv sync --python 3.12 --all-extras
+1. 输入 `::` 触发翻译
+2. 在弹出的表单中输入要翻译的文本
+3. 系统会立即返回翻译结果
+4. 后台会自动生成音频和 diff 文件
 
-    # Activate the virtual environment
-    source .venv/bin/activate
+### 播放音频
 
-    # Install the pre-commit hooks
-    pre-commit install --install-hooks
-    ```
+- 按 `<Ctrl-Q>` 播放最后生成的音频
 
-1. _VS Code Dev Container_: clone this repository, open it with VS Code, and run <kbd>Ctrl/⌘</kbd> + <kbd>⇧</kbd> + <kbd>P</kbd> → _Dev Containers: Reopen in Container_.
-1. _PyCharm Dev Container_: clone this repository, open it with PyCharm, [create a Dev Container with Mount Sources](https://www.jetbrains.com/help/pycharm/start-dev-container-inside-ide.html), and [configure an existing Python interpreter](https://www.jetbrains.com/help/pycharm/configuring-python-interpreter.html#widget) at `/opt/venv/bin/python`.
+## 🔧 开发
 
-</details>
+### 项目结构
 
-<details open>
-<summary>Developing</summary>
+```
+espanso-llm-quick-translate/
+├── src/
+│   ├── config/          # 配置管理
+│   ├── core/            # 核心服务
+│   ├── services/        # 业务服务
+│   ├── sound/           # 音频处理
+│   ├── utils/           # 工具函数
+│   └── resources/       # 资源文件
+├── tests/               # 测试文件
+├── logs/                # 日志文件
+└── package.yml          # espanso 配置
+```
 
-- This project follows the [Conventional Commits](https://www.conventionalcommits.org/) standard to automate [Semantic Versioning](https://semver.org/) and [Keep A Changelog](https://keepachangelog.com/) with [Commitizen](https://github.com/commitizen-tools/commitizen).
-- Run `poe` from within the development environment to print a list of [Poe the Poet](https://github.com/nat-n/poethepoet) tasks available to run on this project.
-- Run `uv add {package}` from within the development environment to install a run time dependency and add it to `pyproject.toml` and `uv.lock`. Add `--dev` to install a development dependency.
-- Run `uv sync --upgrade` from within the development environment to upgrade all dependencies to the latest versions allowed by `pyproject.toml`. Add `--only-dev` to upgrade the development dependencies only.
-- Run `cz bump` to bump the app's version, update the `CHANGELOG.md`, and create a git tag. Then push the changes and the git tag with `git push origin main --tags`.
+### 运行测试
 
-</details>
+```bash
+python tests/test_integration.py
+```
+
+### 日志文件
+
+- `logs/translation.log` - 翻译相关日志
+- `logs/audio.log` - 音频相关日志
+
+## 🐛 故障排除
+
+### 常见问题
+
+1. **翻译失败**
+   - 检查 API 密钥是否正确
+   - 确认网络连接正常
+   - 查看日志文件获取详细错误信息
+
+2. **音频播放失败**
+   - 确认系统音频设备正常
+   - 检查音频文件是否生成
+   - 验证 TTS 服务连接
+
+3. **Diff 显示问题**
+   - 确认 Rainmeter 已安装并运行
+   - 检查皮肤文件路径是否正确
+   - 验证 diff 文件是否生成
+
+### 调试模式
+
+设置日志级别为 DEBUG 获取更详细的信息：
+
+```json
+{
+    "log_level": "DEBUG"
+}
+```
+
+## 🤝 贡献
+
+欢迎提交 Issue 和 Pull Request！
+
+## 📄 许可证
+
+MIT License
+
+## 🙏 致谢
+
+- [espanso](https://espanso.org/) - 文本扩展工具
+- [Rainmeter](https://www.rainmeter.net/) - 桌面定制工具
+- [Edge TTS](https://github.com/rany2/edge-tts) - 文本转语音服务
