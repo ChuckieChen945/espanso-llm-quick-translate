@@ -1,21 +1,38 @@
+global_vars:
+    - name: PYTHON_EXEC
+      type: echo
+      params:
+          echo: "%CONFIG%/match/packages/espanso-llm-quick-translate/.venv/Scripts/python.exe"
+
+    - name: MAIN_SCRIPT
+      type: echo
+      params:
+          echo: "%CONFIG%/match/packages/espanso-llm-quick-translate/src/main.py"
+
+    - name: AUDIO_SCRIPT
+      type: echo
+      params:
+          echo: "%CONFIG%/match/packages/espanso-llm-quick-translate/src/sound/play_audio.py"
+
 matches:
     - trigger: "::"
       replace: "{{translated_text}}"
       label: \[llm-quick-translate\] Translate and generate audio
       vars:
-          - name: "raw_text"
-            type: "form"
+          - name: raw_text
+            type: form
             params:
                 layout: "What would you like to translate?\n\n[[text]]"
                 fields:
                     text:
                         multiline: true
-          - name: "translated_text"
-            type: "script"
+
+          - name: translated_text
+            type: script
             params:
                 args:
-                    - python
-                    - "%CONFIG%/match/packages/espanso-llm-quick-translate/src/main.py"
+                    - "{{PYTHON_EXEC}}"
+                    - "{{MAIN_SCRIPT}}"
                     - "{{raw_text.text}}"
 
     - trigger: "\x11" # <Ctrl-Q> to play last generated audio
@@ -27,5 +44,5 @@ matches:
             type: script
             params:
                 args:
-                    - python
-                    - "%CONFIG%/match/packages/espanso-llm-quick-translate/src/sound/play_audio.py"
+                    - "{{PYTHON_EXEC}}"
+                    - "{{AUDIO_SCRIPT}}"

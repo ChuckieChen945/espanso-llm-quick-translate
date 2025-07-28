@@ -1,19 +1,21 @@
 """翻译管理器模块.
 
-协调各个服务，管理翻译流程。
+协调各个服务，管理翻译流程。立即返回翻译结果，其余工作异步执行。
 """
 
 import asyncio
-from typing import Any
+import threading
+import time
 
 from config import ConfigManager
 from services import AudioService, DiffService, LLMService
+from utils import get_logger
 
 
 class TranslationManager:
     """翻译管理器类.
 
-    协调各个服务，管理翻译流程。
+    协调各个服务，管理翻译流程。优化为立即返回翻译结果，其余工作异步执行。
     """
 
     def __init__(self, config: ConfigManager) -> None:
@@ -26,10 +28,14 @@ class TranslationManager:
         self.llm_service = LLMService(config)
         self.audio_service = AudioService(config)
         self.diff_service = DiffService(config)
-        self._audio_task: asyncio.Task[Any] | None = None
+        self.logger = get_logger("TranslationManager")
+        self._background_tasks: list[threading.Thread] = []
 
     def translate_text(self, text: str) -> str:
-        """翻译文本.
+        """翻译文本并立即返回结果.
+
+        立即调用LLM API翻译文本，返回结果给espanso。
+        其余工作（音频生成、diff生成、自动播放）在后台异步执行。
 
         Args:
             text: 要翻译的文本
@@ -38,39 +44,119 @@ class TranslationManager:
         -------
             翻译结果
         """
-        # 翻译文本
-        translated = self.llm_service.translate(text)
+        start_time = time.time()
+        self.logger.info(f"开始翻译文本: {text[:50]}{'...' if len(text) > 50 else ''}")
 
-        # TODO：立即返回生成的文本交给 espanso 处理，然后剩下的工作全部异步完成
+        try:
+            # 立即调用LLM API翻译
+            translated = self.llm_service.translate(text)
 
-        # 生成diff并写入文件
-        self.diff_service.generate_and_write_diff(text, translated)
+            translation_time = time.time() - start_time
+            self.logger.info(f"翻译完成，耗时: {translation_time:.2f}秒")
+            self.logger.info(f"翻译结果: {translated[:50]}{'...' if len(translated) > 50 else ''}")
 
-        # 异步生成音频
-        self._audio_task = asyncio.create_task(self._generate_audio_async(translated))
+            # TODO: 修正后台任务不会被执行的 Bug
 
-        return translated
+            # 在后台异步执行其余工作
+            self._start_background_tasks(text, translated)
 
-    async def translate_text_async(self, text: str) -> str:
-        """异步翻译文本.
+        except Exception as e:
+            self.logger.error(f"翻译失败: {e}", exc_info=True)
+            return f"❌ 翻译失败: {e}"
+        else:
+            return translated
+
+    def _start_background_tasks(self, original_text: str, translated_text: str) -> None:
+        """启动后台任务.
 
         Args:
-            text: 要翻译的文本
-
-        Returns
-        -------
-            翻译结果
+            original_text: 原始文本
+            translated_text: 翻译文本
         """
-        # 异步翻译文本
-        translated = await self.llm_service.translate_async(text)
+        # 创建后台线程执行异步任务
+        background_thread = threading.Thread(
+            target=self._run_background_tasks,
+            args=(original_text, translated_text),
+            daemon=True,
+        )
+        background_thread.start()
+        self._background_tasks.append(background_thread)
 
-        # 生成diff并写入文件
-        self.diff_service.generate_and_write_diff(text, translated)
+    def _run_background_tasks(self, original_text: str, translated_text: str) -> None:
+        """运行后台任务.
 
-        # 生成音频
-        await self._generate_audio_async(translated)
+        Args:
+            original_text: 原始文本
+            translated_text: 翻译文本
+        """
+        try:
+            # 创建新的事件循环用于后台任务
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
 
-        return translated
+            # 运行异步任务
+            loop.run_until_complete(self._execute_background_tasks(original_text, translated_text))
+
+        except Exception as e:
+            self.logger.error(f"后台任务执行失败: {e}", exc_info=True)
+        finally:
+            loop.close()
+
+    async def _execute_background_tasks(self, original_text: str, translated_text: str) -> None:
+        """执行后台异步任务.
+
+        Args:
+            original_text: 原始文本
+            translated_text: 翻译文本
+        """
+        start_time = time.time()
+        self.logger.info("开始执行后台任务")
+
+        try:
+            # 并行执行diff生成和音频生成
+            diff_task = asyncio.create_task(
+                self._generate_diff_async(original_text, translated_text),
+            )
+            audio_task = asyncio.create_task(self._generate_audio_async(translated_text))
+
+            # 等待所有任务完成
+            await asyncio.gather(diff_task, audio_task)
+
+            # 如果配置了自动播放，播放音频
+            if self.config.auto_play:
+                await asyncio.create_task(self._play_audio_async())
+
+            total_time = time.time() - start_time
+            self.logger.info(f"后台任务完成，总耗时: {total_time:.2f}秒")
+
+        except Exception as e:
+            self.logger.error(f"后台任务执行失败: {e}", exc_info=True)
+
+    async def _generate_diff_async(self, original_text: str, translated_text: str) -> None:
+        """异步生成diff.
+
+        Args:
+            original_text: 原始文本
+            translated_text: 翻译文本
+        """
+        try:
+            start_time = time.time()
+            self.logger.info("开始生成diff")
+
+            # 在线程池中运行同步的diff生成
+            loop = asyncio.get_event_loop()
+            await loop.run_in_executor(
+                None,
+                self.diff_service.generate_and_write_diff,
+                original_text,
+                translated_text,
+            )
+
+            diff_time = time.time() - start_time
+            self.logger.info(f"diff生成完成，耗时: {diff_time:.2f}秒")
+
+        except Exception as e:
+            self.logger.error(f"diff生成失败: {e}", exc_info=True)
 
     async def _generate_audio_async(self, text: str) -> None:
         """异步生成音频.
@@ -79,20 +165,45 @@ class TranslationManager:
             text: 要转换的文本
         """
         try:
+            start_time = time.time()
+            self.logger.info("开始生成音频")
+
             await self.audio_service.generate_tts_audio(text)
 
-            # 如果配置了自动播放，则播放音频
-            if self.config.auto_play:
-                self.audio_service.play_last_audio(block=False)
+            audio_time = time.time() - start_time
+            self.logger.info(f"音频生成完成，耗时: {audio_time:.2f}秒")
 
         except Exception as e:
-            print(f"❌ 音频生成失败: {e}")
+            self.logger.error(f"音频生成失败: {e}", exc_info=True)
+
+    async def _play_audio_async(self) -> None:
+        """异步播放音频."""
+        try:
+            start_time = time.time()
+            self.logger.info("开始播放音频")
+
+            # 在线程池中运行同步的音频播放
+            loop = asyncio.get_event_loop()
+            await loop.run_in_executor(
+                None,
+                self.audio_service.play_last_audio,
+                False,  # 非阻塞播放
+            )
+
+            play_time = time.time() - start_time
+            self.logger.info(f"音频播放完成，耗时: {play_time:.2f}秒")
+
+        except Exception as e:
+            self.logger.error(f"音频播放失败: {e}", exc_info=True)
 
     def play_last_audio(self) -> None:
         """播放最后生成的音频."""
         try:
+            self.logger.info("手动播放音频")
             self.audio_service.play_last_audio()
+            self.logger.info("音频播放完成")
         except Exception as e:
+            self.logger.error(f"音频播放失败: {e}", exc_info=True)
             print(f"❌ 音频播放失败: {e}")
 
     @property
@@ -100,20 +211,9 @@ class TranslationManager:
         """获取最后生成的音频文件路径."""
         return self.audio_service.last_audio_file
 
-    def wait_for_audio_completion(self) -> None:
-        """等待音频生成完成."""
-        if self._audio_task and not self._audio_task.done():
-            try:
-                # 在同步环境中等待异步任务
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    # 如果事件循环正在运行，使用线程池
-                    import concurrent.futures
-
-                    with concurrent.futures.ThreadPoolExecutor() as executor:
-                        future = executor.submit(asyncio.run, self._audio_task)
-                        future.result()
-                else:
-                    loop.run_until_complete(self._audio_task)
-            except Exception as e:
-                print(f"❌ 等待音频生成完成时出错: {e}")
+    def wait_for_background_tasks(self) -> None:
+        """等待所有后台任务完成."""
+        for task in self._background_tasks:
+            if task.is_alive():
+                task.join()
+        self._background_tasks.clear()
