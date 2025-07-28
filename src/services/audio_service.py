@@ -69,14 +69,12 @@ class AudioService:
 
             # 生成音频
             communicate = Communicate(text, sound_name)
-            # FIXME: cannot schedule new futures after interpreter shutdown
             await communicate.save(file_path)
 
             # 验证文件是否生成成功
             if not Path(file_path).exists():
                 msg = f"音频文件生成失败: {file_path}"
-                # TODO: Abstract `raise` to an inner function
-                raise Exception(msg)
+                self._raise_error(msg)
 
             self._last_audio_file = file_path
 
@@ -89,7 +87,7 @@ class AudioService:
         except Exception as e:
             tts_time = time.time() - start_time
             self.logger.error(f"TTS音频生成失败，耗时: {tts_time:.2f}秒，错误: {e}", exc_info=True)
-            raise Exception(f"音频生成失败: {e}") from e
+            self._raise_error(f"音频生成失败: {e}", e)
         else:
             return file_path
 
@@ -111,8 +109,7 @@ class AudioService:
 
         if not Path(filepath).exists():
             msg = f"音频文件不存在: {filepath}"
-            self.logger.error(msg)
-            raise FileNotFoundError(msg)
+            self._raise_error(msg)
 
         try:
             # 获取文件信息
@@ -142,8 +139,7 @@ class AudioService:
         """
         if self._last_audio_file is None:
             msg = "没有可播放的音频文件"
-            self.logger.error(msg)
-            raise ValueError(msg)
+            self._raise_error(msg)
 
         self.play_audio(self._last_audio_file, block=block)
 
@@ -172,3 +168,11 @@ class AudioService:
             return False
         else:
             return True
+
+    def _raise_error(self, msg: str, exc: Exception = None) -> None:
+        """统一异常抛出和日志记录."""
+        if exc is not None:
+            self.logger.error(msg, exc_info=True)
+            raise Exception(msg) from exc
+        self.logger.error(msg)
+        raise Exception(msg)
